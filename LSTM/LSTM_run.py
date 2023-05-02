@@ -4,10 +4,16 @@ from LSTM.LSTM_model import LSTM
 
 
 ##############
+
 # Define setting for LSTM training
-num_epochs = 5 # epochs
+# Standard settings
+# num_epochs = 5 # epochs
+# learning_rate = 0.0002 # lr
+# dropout=0.2
+
+num_epochs = 6 # epochs
 learning_rate = 0.0002 # lr
-dropout=0.2
+dropout=0.1
 
 input_size = 237 #number of features
 hidden_size = 200 #number of features in hidden state
@@ -17,6 +23,7 @@ class_weights=[0.05, 0.95]
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 print(f"Using {device} device")
 ###############
 # Load data into data loaders

@@ -37,6 +37,7 @@ targets_test = data_test["y"][:].reshape(-1).tolist()
 network_trained = torch.load("./Final_models/ews_short.pickle")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 
 acc, outputs_list= calculate_accuracy(network=network_trained, loader=testloader, targets=targets_test,
                    device=device, data_type="valid")

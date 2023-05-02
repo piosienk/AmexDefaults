@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     data_processing = False
     logistic = False
-    lstm = False
-    ews = True
+    lstm = True
+    ews = False
 
     if data_processing:
         print("Executing data processing steps")

@@ -1,6 +1,6 @@
 import pickle
 import torch
-from LSTM.LSTM_model import LSTM
+from EWS.EWS_model import LSTM
 
 
 ##############
@@ -18,6 +18,7 @@ class_weights=[0.05, 0.95]
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 print(f"Using {device} device")
 ###############
 # Load data into data loaders

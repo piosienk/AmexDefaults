@@ -64,7 +64,8 @@ class LSTM(nn.Module):
 
                 # forward + backward + optimize
                 outputs = self(inputs)
-                loss = criterion(outputs, labels)
+                # loss = criterion(outputs, labels)
+                loss = criterion(outputs[:,1].float(), labels.float(), alpha=0.25, reduction="sum")
                 loss.backward()
                 optimizer.step()
 
@@ -101,7 +102,8 @@ class LSTM(nn.Module):
         for i in range(n_runs):
             print('Run nr {}'.format(i + 1))
 
-            criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device))
+            # criterion = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device))
+            criterion = sigmoid_focal_loss
             optimizer = optim.Adam(self.parameters(), lr=lr)
             scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
             acc_train_list, acc_valid_list = self.train_network(epochs, epoch_size, train_loader,
