@@ -12,13 +12,13 @@ if __name__ == "__main__":
     np.random.seed(123)
     data_path = "/home/piotr/Jupyter/MasterThesis/Data"
     labels_path = "/home/piotr/Jupyter/MasterThesis/Labels"
+    default_path = os.getcwd()
+
 
     data_processing = False
-    logistic = True
-    lstm = True
-    ews = False
-
-    default_path = os.getcwd()
+    logistic = False
+    lstm = False
+    ews = True
 
     if data_processing:
         print("Executing data processing steps")
@@ -83,6 +83,18 @@ if __name__ == "__main__":
 
         os.chdir(default_path)
 
+        ##################
+        # 3. EWS data processing
+
+        os.chdir("./EWS")
+
+        # Execute EWS step 1 of data processing for train, validation and testing (based on step 3 of LSTM)
+        with open("./data_preparation_EWS_3.py", "r") as file:
+            code = compile(file.read(), "./data_preparation_EWS_3.py", "exec")
+            exec(code)
+
+        os.chdir(default_path)
+
     if logistic:
         print("Executing logistic model steps")
         os.chdir("./Logistic")
@@ -104,13 +116,29 @@ if __name__ == "__main__":
         os.chdir("./LSTM")
 
         # Execute LSTM model step 1 - Fit and test LSTM Model
-        # with open("./LSTM_run.py", "r") as file:
-        #     code = compile(file.read(), "./LSTM_run.py", "exec")
-        #     exec(code)
+        with open("./LSTM_run.py", "r") as file:
+            code = compile(file.read(), "./LSTM_run.py", "exec")
+            exec(code)
 
         # Execute LSTM model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./LSTM_test.py", "r") as file:
             code = compile(file.read(), "./LSTM_test.py", "exec")
+            exec(code)
+
+        os.chdir(default_path)
+
+    if ews:
+        print("Executing EWS model steps")
+        os.chdir("./EWS")
+
+        # Execute EWS short model step 1 - Fit and test EWS short Model
+        with open("./EWS_short_run.py", "r") as file:
+            code = compile(file.read(), "./EWS_short_run.py", "exec")
+            exec(code)
+
+        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        with open("./EWS_short_test.py", "r") as file:
+            code = compile(file.read(), "./EWS_short_test.py", "exec")
             exec(code)
 
         os.chdir(default_path)

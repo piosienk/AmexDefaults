@@ -1,14 +1,17 @@
 import pickle
+
+import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, PrecisionRecallDisplay, roc_curve
 
 
-def prepare_lstm_data_3(input_path, output_path):
+def prepare_ews_data_3(input_path, output_path, time_windows):
     """
     prepare dictionary with x and y for pytorch dataloader
 
+    :param time_windows: possible lengths of sequences
     :param input_path: path to input
     :param output_path: path to output
     :returns None - it saves dictionary with X and Y elements that can be fed into pytorch dataloader
@@ -16,7 +19,21 @@ def prepare_lstm_data_3(input_path, output_path):
     df = pd.read_parquet(input_path)
     df = df.drop(columns=["S_2"], inplace=False)
 
-    y_df= df.loc[:, ["target", "customer_ID"]].groupby("customer_ID").mean().to_numpy("int")
+    # Randomly remove the last k observations for a customer (replace values with 0)
+    customers = df.customer_ID.unique()
+    n_to_keep = np.random.choice(time_windows, size=len(customers))
+
+    indices_to_keep_list = []
+    for i in range(len(customers)):
+        indices_to_keep = np.arange(i * 13, (i * 13) + n_to_keep[i]).tolist()
+        indices_to_keep_list.append(indices_to_keep)
+
+    indices_to_keep_list = [item for sublist in indices_to_keep_list for item in sublist]
+    indices_to_remove_list = list(set(np.arange(0, df.shape[0])).difference(indices_to_keep_list))
+
+    df.iloc[indices_to_remove_list, 2:] = 0
+
+    y_df = df.loc[:, ["target", "customer_ID"]].groupby("customer_ID").mean().to_numpy("int")
     x_df = df.drop(columns=["target", "customer_ID"]).to_numpy("float32").reshape((-1, 13, 237), order="C")
 
     data = {"y": y_df, "x": x_df}
