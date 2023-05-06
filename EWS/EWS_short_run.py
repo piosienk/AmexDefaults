@@ -5,9 +5,9 @@ from EWS.EWS_model import LSTM
 
 ##############
 # Define setting for LSTM training
-num_epochs = 6 # epochs
+num_epochs = 8 # epochs
 learning_rate = 0.0002 # lr
-dropout=0.2
+dropout=0.1
 
 input_size = 237 #number of features
 hidden_size = 250 #number of features in hidden state

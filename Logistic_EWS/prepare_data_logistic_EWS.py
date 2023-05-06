@@ -8,6 +8,8 @@ import pickle
 alpha = 0.05
 k = 1000  # for int values
 k2 = 15000  # for float values
+time_windows = [2, 3, 4, 5, 6]
+
 
 # Load and preprocess
 df_train = pd.read_parquet(data_path + "/train_data_split.parquet").fillna(-9999)
@@ -15,6 +17,17 @@ df_train = df_train.sort_values(by=["customer_ID", "customer_obs"])
 customers_counter = df_train.iloc[:,[0,1]].groupby("customer_ID").count()
 sel_customers = customers_counter.loc[customers_counter.target == 13].reset_index().drop(columns="target")
 df_train = df_train.loc[df_train.customer_ID.isin(sel_customers.customer_ID),:]
+
+# Randomly cut customers observations and create shorter sequences
+customers = sel_customers.customer_ID.unique()
+n_to_keep = np.random.choice(time_windows, size=len(customers))
+indices_to_keep_list = []
+for i in range(len(customers)):
+    indices_to_keep = np.arange(i * 13, (i * 13) + n_to_keep[i]).tolist()
+    indices_to_keep_list.append(indices_to_keep)
+
+indices_to_keep_list = [item for sublist in indices_to_keep_list for item in sublist]
+df_train = df_train.iloc[indices_to_keep_list, :].reset_index(drop=True)
 
 ## Additional discrete variables in which additional NaNs indicator column should be added
 ## with median or best fitting group imputuation:
@@ -27,7 +40,7 @@ add_int_var = ["D_44", "D_64", "D_68", "D_70", "D_72", "D_78", "D_79", "D_81", "
 add_cat_var = ["B_8", "D_54", "D_66", "D_103", "D_114", "D_116", "D_120", "D_126", "D_128", "D_129", "D_130", "D_139",
                "D_140", "D_143"]
 
-var_to_remove = ["D_87", "D_88"]
+var_to_remove = ["D_87", "D_88", "D_108", "D_111"]
 
 for column in add_int_var:
     df_train[column] = df_train[column].astype('int16')
@@ -92,6 +105,6 @@ for column in df_new.iloc[:, :].columns:
     binning_dict[column] = df_woe
     print(df_woe.drop(columns="Bin"))
 
-df_new.to_parquet(data_path + "/train_data_woe_merged_13snaps.parquet")
-with open('./Additional_data/WoE_binning_merged_13snaps.pickle', 'wb') as file:
+df_new.to_parquet(data_path + "/train_data_woe_merged_short.parquet")
+with open('./Additional_data/WoE_binning_merged_short.pickle', 'wb') as file:
     pickle.dump(binning_dict, file)

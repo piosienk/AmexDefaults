@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import scipy
-import scipy.stats
 
 def group_bins_int(df, column, n):
     """

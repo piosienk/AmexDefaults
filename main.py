@@ -14,11 +14,12 @@ if __name__ == "__main__":
     labels_path = "/home/piotr/Jupyter/MasterThesis/Labels"
     default_path = os.getcwd()
 
-
     data_processing = False
     logistic = False
-    lstm = True
+    lstm = False
     ews = False
+    logistic_ews = False
+    explain = True
 
     if data_processing:
         print("Executing data processing steps")
@@ -95,6 +96,16 @@ if __name__ == "__main__":
 
         os.chdir(default_path)
 
+        # 4. Logistic approach to EWS data processing
+        os.chdir("./Logistic_EWS")
+
+        # Execute EWS step 1 of data processing for train, validation and testing (based on step 3 of LSTM)
+        with open("./prepare_data_logistic_EWS.py", "r") as file:
+            code = compile(file.read(), "./prepare_data_logistic_EWS.py", "exec")
+            exec(code)
+
+        os.chdir(default_path)
+
     if logistic:
         print("Executing logistic model steps")
         os.chdir("./Logistic")
@@ -142,4 +153,32 @@ if __name__ == "__main__":
             exec(code)
 
         os.chdir(default_path)
+
+    if logistic_ews:
+        print("Executing logistic EWS model steps")
+        os.chdir("./Logistic_EWS")
+
+        # Execute EWS short model step 1 - Fit and test EWS short Model
+        with open("./logistic_regression_model_EWS.py", "r") as file:
+            code = compile(file.read(), "./logistic_regression_model_EWS.py", "exec")
+            exec(code)
+
+        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        with open("./logistic_regression_test_EWS.py", "r") as file:
+            code = compile(file.read(), "./logistic_regression_test_EWS.py", "exec")
+            exec(code)
+
+        os.chdir(default_path)
+
+    if explain:
+        print("Executing explainability steps")
+        os.chdir("./Explainability")
+
+        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        with open("./integrated_gradient.py", "r") as file:
+            code = compile(file.read(), "./integrated_gradient.py", "exec")
+            exec(code)
+
+        os.chdir(default_path)
+
 

@@ -5,6 +5,10 @@ import pandas as pd
 # Read data prepared in step 1
 df = pd.read_parquet(data_path + "/train_data_for_LSTM.parquet")
 
+# Save variables names
+variables_names = df.columns[3:]
+pd.Series(variables_names).to_csv("./Additional_data/variables_names.csv")
+
 # Split data into training and validation (10%)
 customers = df.customer_ID.unique()
 cus_train, cus_valid = train_test_split(customers, test_size=0.1, random_state=0)
