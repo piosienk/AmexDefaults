@@ -16,6 +16,7 @@ class LSTM(nn.Module):
         self.input_size = input_size  # input size
         self.hidden_size = hidden_size  # hidden state
 
+        self.normalization = nn.BatchNorm1d(13)
         self.lstm1 = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
                              num_layers=num_layers, batch_first=True, bias=True)  # lstm
         self.fc1 = nn.Linear(hidden_size, 128)  # fully connected 1
@@ -27,15 +28,15 @@ class LSTM(nn.Module):
         # Get cpu or gpu device for training.
         device = "cuda" if torch.cuda.is_available() else "cpu"
         device="cpu"
-
         x = x.to(device)
-        h_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, device=x.device)  # hidden state
+        x_norm = self.normalization(x)
+        h_0 = torch.zeros(self.num_layers, x_norm.size(0), self.hidden_size, device=x_norm.device)  # hidden state
         nn.init.xavier_uniform_(h_0)
-        c_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, device=x.device)  # internal state
+        c_0 = torch.zeros(self.num_layers, x_norm.size(0), self.hidden_size, device=x_norm.device)  # internal state
         nn.init.xavier_uniform_(c_0)
 
         # Propagate input through LSTM
-        output, (hn, cn) = self.lstm1(x, (h_0, c_0))  # lstm with input, hidden, and internal state
+        output, (hn, cn) = self.lstm1(x_norm, (h_0, c_0))  # lstm with input, hidden, and internal state
         hn = hn.reshape(-1, self.hidden_size)  # reshaping the data for Dense layer next
         x = self.dropout(F.relu(self.fc1(hn)))
         out = self.fc2(x)

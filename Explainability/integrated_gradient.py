@@ -7,6 +7,8 @@ import pickle
 import torch.nn as nn
 
 # Load model
+from Explainability.explainability_helpers import calculate_integrated_gradient
+
 network_trained = torch.load("../LSTM/Final_models/lstm.pickle")
 ig = captum.attr.IntegratedGradients(network_trained)
 
@@ -37,30 +39,29 @@ if down_defaults:
 
 # adjust X
 data_test["x"] = np.delete(data_test["x"], to_remove_bad.index, axis=0)
-input_test = torch.from_numpy(data_test["x"][:1000, :, :]).reshape(1000,13,237)
+
+# Prepare input and baseline for integrated gradient
+bad_index = np.where(data_test["y"].reshape(-1) == 1)
+good_index = np.where(data_test["y"].reshape(-1) == 0)
+
+input_bad = torch.from_numpy(data_test["x"][bad_index[0][:1500], :, :]).reshape(-1, 13, 237)
+input_good = torch.from_numpy(data_test["x"][good_index[0][:1500], :, :]).reshape(-1, 13, 237)
+input_test = torch.from_numpy(data_test["x"][:1500, :, :]).reshape(-1, 13, 237)
+
+baseline_bad = torch.zeros(input_bad.shape)
+baseline_good = torch.zeros(input_good.shape)
 baseline = torch.zeros(input_test.shape)
-y_target = data_test["y"][:1000].reshape(1000).tolist()
 
-attributions, delta = ig.attribute(input_test, baseline, target=y_target, return_convergence_delta=True)
-attributions = attributions.numpy().reshape(1000, 13,237)
-variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
-variable_names.columns = ["var_num", "var_name"]
-df_attributions = pd.DataFrame(attributions.mean(axis=0), columns=variable_names.var_name)
-features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
+y_bad = np.repeat(1, 1500).tolist()
+y_good = np.repeat(0, 1500).tolist()
+y_test = data_test["y"][:1500].reshape(-1).tolist()
 
-# plot max attribution
-plt.subplots(figsize=(15,6))
-plt.bar(features_max_attribution.index, features_max_attribution.values)
-plt.show()
+del data_test
 
-# plot attribution change over time
-plt.subplots(figsize=(15,8))
-for column in features_max_attribution.index:
-    plt.plot(df_attributions[column], label=column)
-plt.legend()
-plt.show()
+attributions, delta = calculate_integrated_gradient(ig, input_test, baseline, y_test, n_variables, 1500)
+attributions_bad, delta_bad = calculate_integrated_gradient(ig, input_bad, baseline_bad, y_bad, n_variables, 1500)
+attributions_good, delta_good = calculate_integrated_gradient(ig, input_good, baseline_good, y_good, n_variables, 1500)
 
-
-print('IG Attributions:', attributions)
-print('Convergence Delta:', delta)
+print('IG Attributions:', attributions_bad)
+print('Convergence Delta:', delta_bad)
 

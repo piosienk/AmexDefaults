@@ -13,7 +13,7 @@ from LSTM.LSTM_model import LSTM
 
 num_epochs = 6 # epochs
 learning_rate = 0.0002 # lr
-dropout=0.1
+dropout=0.2
 
 input_size = 237 #number of features
 hidden_size = 200 #number of features in hidden state
