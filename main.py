@@ -142,14 +142,24 @@ if __name__ == "__main__":
         print("Executing EWS model steps")
         os.chdir("./EWS")
 
-        # Execute EWS short model step 1 - Fit and test EWS short Model
-        with open("./EWS_short_run.py", "r") as file:
-            code = compile(file.read(), "./EWS_short_run.py", "exec")
+        # # Execute EWS short model step 1 - Fit and test EWS short Model
+        # with open("./EWS_short_run.py", "r") as file:
+        #     code = compile(file.read(), "./EWS_short_run.py", "exec")
+        #     exec(code)
+        #
+        # # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        # with open("./EWS_short_test.py", "r") as file:
+        #     code = compile(file.read(), "./EWS_short_test.py", "exec")
+        #     exec(code)
+
+        # Execute EWS medium model step 1 - Fit and test EWS medium Model
+        with open("./EWS_medium_run.py", "r") as file:
+            code = compile(file.read(), "./EWS_medium_run.py", "exec")
             exec(code)
 
-        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
-        with open("./EWS_short_test.py", "r") as file:
-            code = compile(file.read(), "./EWS_short_test.py", "exec")
+        # Execute EWS medium model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        with open("./EWS_medium_test.py", "r") as file:
+            code = compile(file.read(), "./EWS_medium_test.py", "exec")
             exec(code)
 
         os.chdir(default_path)
@@ -174,9 +184,19 @@ if __name__ == "__main__":
         print("Executing explainability steps")
         os.chdir("./Explainability")
 
-        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
-        with open("./integrated_gradient.py", "r") as file:
-            code = compile(file.read(), "./integrated_gradient.py", "exec")
+        # Execute Explainability step 1 - Integrated Gradient calculation
+        # with open("./integrated_gradient.py", "r") as file:
+        #     code = compile(file.read(), "./integrated_gradient.py", "exec")
+        #     exec(code)
+
+        # Execute Explainability step 2 - Feature Importance
+        # with open("./feature_permutations.py", "r") as file:
+        #     code = compile(file.read(), "./feature_permutations.py", "exec")
+        #     exec(code)
+
+        # Execute Explainability step 3 - Feature Ablation
+        with open("./feature_ablation.py", "r") as file:
+            code = compile(file.read(), "./feature_ablation.py", "exec")
             exec(code)
 
         os.chdir(default_path)
