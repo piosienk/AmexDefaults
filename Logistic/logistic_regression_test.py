@@ -8,7 +8,9 @@ from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
 from Logistic.logistic_helpers import calculate_diff_in_clients
 
+# Settings
 np.random.seed(123)
+training_default_rate = 0.04285
 
 # Check performance on test sample
 
@@ -40,16 +42,6 @@ if not include_non_13:
 df_x = df_test.groupby("customer_ID").last().reset_index()
 df_x = df_x.drop(columns=["S_2", "customer_obs"])
 print(df_x.shape)
-
-if down_defaults:
-    # Remove 75,750 defaults in the test sample
-    print("Shape of the test data before adjustments: ", df_x.shape)
-    print("Default rate before adjustment set: ", df_x["target"].mean())
-
-    to_remove_bad = df_x.loc[df_x.target == 1, :].sample(76283, random_state=123)
-    df_x = df_x.drop(index=to_remove_bad.index)
-    print("Shape of the test data after adjustments: ", df_x.shape)
-    print("Default rate after adjustment set: ", df_x["target"].mean())
 
 # Do the same modifications as in case of training sample
 first_snapshot = df_test.groupby("customer_ID").first().reset_index()
@@ -107,21 +99,76 @@ for column in x_variables:
                 right = float(row["Bin"].split(",")[1].replace("]", ""))
                 df_x_test.loc[(df_x_test[column] > left) & (df_x_test[column] <= (right + 1e-4)), column] = row["woe"]
 
-# Make prediction on test sample
-y_predict = lm.predict(df_x_test.loc[:,selected_features])
-y_predict_prob = lm.predict_proba(df_x_test.loc[:,selected_features])
-y_test = df_x_test.target
+avg_precision_list = []
+auc_list = []
 
-print("Test accuracy of LR + WoE: ", (y_predict==df_x_test.target).mean())
+if down_defaults:
+    # Remove 75,750 defaults in the test sample
+    print("Shape of the test data before adjustments: ", df_x_test.shape)
+    print("Default rate before adjustment set: ", df_x_test["target"].mean())
 
-fpr, tpr, thresholds = metrics.roc_curve(y_test, y_predict_prob[:,1])
-print("Test ROC AUC of LR + WoE: ",
-      metrics.roc_auc_score(y_test.to_numpy(), y_predict_prob[:,1]))
+    for i in range(20):
+        print("test run {}:".format(i))
 
-# Precision-recall curve for LR
-display = metrics.PrecisionRecallDisplay.from_predictions(y_test, y_predict_prob[:,1], name="LR+WoE")
-_ = display.ax_.set_title("Test 2-class Precision-Recall curve")
-plt.show()
+        test_y = df_x_test["target"]
+
+        # Calculate how many defaults we should keep to have the same DR as in the training set
+        target_bad_number = round(
+                training_default_rate * len(test_y.loc[test_y == 0]) / (1 - training_default_rate))
+        to_remove_bad_number = len(test_y.loc[test_y == 1])- target_bad_number
+
+        # to_remove_bad = test_y.loc[test_y.target == 1, :].sample(76283, random_state=123)
+        to_remove_bad = test_y.loc[test_y == 1].sample(to_remove_bad_number, random_state=i)
+
+        df_x_test_single_run = df_x_test.drop(index=to_remove_bad.index)
+
+        if i == 0:
+            print("Shape of the test data after adjustments: ", df_x_test_single_run["target"].shape)
+            print("Default rate after adjustment set: ", df_x_test_single_run["target"].mean())
+
+        # Make prediction on test sample
+        y_predict = lm.predict(df_x_test_single_run.loc[:,selected_features])
+        y_predict_prob = lm.predict_proba(df_x_test_single_run.loc[:,selected_features])
+        y_test = df_x_test_single_run.target
+
+
+        fpr, tpr, thresholds = metrics.roc_curve(y_test, y_predict_prob[:,1])
+
+        # Precision-recall curve for LR
+        display = metrics.PrecisionRecallDisplay.from_predictions(y_test, y_predict_prob[:,1], name="LR+WoE")
+        _ = display.ax_.set_title("Test 2-class Precision-Recall curve")
+        plt.show()
+        avg_precision = display.average_precision
+        auc = metrics.roc_auc_score(y_test.to_numpy(), y_predict_prob[:,1])
+
+        avg_precision_list.append(avg_precision)
+        auc_list.append(auc)
+
+    print("AP list: ", avg_precision_list)
+    print("AP mean: ", np.mean(avg_precision_list))
+    print("AP std: ", np.std(avg_precision_list))
+    print("AUC mean: ", np.mean(auc_list))
+    print("AUC std: ", np.std(auc_list))
+
+
+else:
+    # Make prediction on test sample
+    y_predict = lm.predict(df_x_test.loc[:, selected_features])
+    y_predict_prob = lm.predict_proba(df_x_test.loc[:, selected_features])
+    y_test = df_x_test.target
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_predict_prob[:, 1])
+
+    # Precision-recall curve for LR
+    display = metrics.PrecisionRecallDisplay.from_predictions(y_test, y_predict_prob[:, 1], name="LR+WoE")
+    _ = display.ax_.set_title("Test 2-class Precision-Recall curve")
+    plt.show()
+    avg_precision = display.average_precision
+    auc = metrics.roc_auc_score(y_test.to_numpy(), y_predict_prob[:, 1])
+
+    print("AP: ", avg_precision)
+    print("AUC: ", auc)
+
 coefs = pd.DataFrame(selected_features)
 coefs["coef"] = lm.coef_.reshape(-1, 1)
 print("LR coefficients: ", coefs.loc[(coefs.coef != 0) & (coefs.coef.abs() > 1e-5), :])

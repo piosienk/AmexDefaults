@@ -42,5 +42,5 @@ network_trained = torch.load("./Final_models/ews_medium.pickle")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 device = "cpu"
 
-acc, outputs_list= calculate_accuracy(network=network_trained, loader=testloader, targets=targets_test,
+acc, outputs_list, avg_precision, auc = calculate_accuracy(network=network_trained, loader=testloader, targets=targets_test,
                    device=device, data_type="valid")

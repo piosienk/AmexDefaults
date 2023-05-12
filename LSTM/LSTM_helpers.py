@@ -73,6 +73,7 @@ def calculate_accuracy(network, loader, targets, device, data_type, batch_n=128)
         display = PrecisionRecallDisplay.from_predictions(targets, outputs_list, name="LSTM")
         _ = display.ax_.set_title("2-class Precision-Recall curve")
         plt.show()
+        average_precision = display.average_precision
 
     if data_type == 'train':
         print(f'Accuracy of the network on the train: {100 * correct // total} %')
@@ -80,6 +81,6 @@ def calculate_accuracy(network, loader, targets, device, data_type, batch_n=128)
 
     accuracy = 100 * correct / total
 
-    return [accuracy, outputs_list]
+    return [accuracy, outputs_list, average_precision, auc]
 
 
