@@ -16,9 +16,9 @@ if __name__ == "__main__":
 
     data_processing = False
     logistic = False
-    lstm = True
+    lstm = False
     ews = False
-    logistic_ews = False
+    logistic_ews = True
     explain = False
 
     if data_processing:
@@ -146,8 +146,8 @@ if __name__ == "__main__":
         with open("./EWS_short_run.py", "r") as file:
             code = compile(file.read(), "./EWS_short_run.py", "exec")
             exec(code)
-        #
-        # # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+
+        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./EWS_short_test.py", "r") as file:
             code = compile(file.read(), "./EWS_short_test.py", "exec")
             exec(code)
@@ -168,14 +168,24 @@ if __name__ == "__main__":
         print("Executing logistic EWS model steps")
         os.chdir("./Logistic_EWS")
 
-        # Execute EWS short model step 1 - Fit and test EWS short Model
-        with open("./logistic_regression_model_EWS.py", "r") as file:
-            code = compile(file.read(), "./logistic_regression_model_EWS.py", "exec")
+        # # Execute EWS short model step 1 - Fit and test EWS short Model
+        # with open("./logistic_regression_model_EWS.py", "r") as file:
+        #     code = compile(file.read(), "./logistic_regression_model_EWS.py", "exec")
+        #     exec(code)
+        #
+        # # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        # with open("./logistic_regression_test_EWS.py", "r") as file:
+        #     code = compile(file.read(), "./logistic_regression_test_EWS.py", "exec")
+        #     exec(code)
+
+        # Execute EWS medium model step 1 - Fit and test EWS medium Model
+        with open("./logistic_regression_model_EWS_medium.py", "r") as file:
+            code = compile(file.read(), "./logistic_regression_model_EWS_medium.py", "exec")
             exec(code)
 
-        # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
-        with open("./logistic_regression_test_EWS.py", "r") as file:
-            code = compile(file.read(), "./logistic_regression_test_EWS.py", "exec")
+        # Execute EWS medium model step 2 - validate on the Test sample (the same as Logistic Regressor)
+        with open("./logistic_regression_test_EWS_medium.py", "r") as file:
+            code = compile(file.read(), "./logistic_regression_test_EWS_medium.py", "exec")
             exec(code)
 
         os.chdir(default_path)

@@ -8,7 +8,8 @@ import pickle
 alpha = 0.05
 k = 1000  # for int values
 k2 = 15000  # for float values
-time_windows = [2, 3, 4, 5, 6]
+# time_windows = [2, 3, 4, 5, 6] # Short model
+time_windows = [7, 8, 9, 10, 11, 12] # Medium model
 
 
 # Load and preprocess
@@ -64,7 +65,7 @@ x_variables.remove("customer_ID")
 df_diff = calculate_diff_in_clients(df_x, first_snapshot, x_variables)
 
 df_x2 = pd.concat([df_x, df_diff], axis=1).fillna(0)
-df_y.to_parquet("./Additional_data/df_train_y_reduced_merged.parquet")
+# df_y.to_parquet("./Additional_data/df_train_y_reduced_merged.parquet")
 
 # Calculate WoE for every column
 df_new = df_x2.iloc[:,3:].copy(deep=True)
@@ -105,6 +106,6 @@ for column in df_new.iloc[:, :].columns:
     binning_dict[column] = df_woe
     print(df_woe.drop(columns="Bin"))
 
-df_new.to_parquet(data_path + "/train_data_woe_merged_short.parquet")
-with open('./Additional_data/WoE_binning_merged_short.pickle', 'wb') as file:
+df_new.to_parquet(data_path + "/train_data_woe_merged_medium.parquet")
+with open('./Additional_data/WoE_binning_merged_medium.pickle', 'wb') as file:
     pickle.dump(binning_dict, file)

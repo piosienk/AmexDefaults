@@ -10,8 +10,8 @@ from Logistic.logistic_helpers import calculate_diff_in_clients
 
 # Settings
 np.random.seed(123)
-time_windows = [2, 3, 4, 5, 6] # Short model
-# time_windows = [7, 8, 9, 10, 11, 12] # Medium model
+# time_windows = [2, 3, 4, 5, 6] # Short model
+time_windows = [7, 8, 9, 10, 11, 12] # Medium model
 training_default_rate = 0.04285
 
 
@@ -19,15 +19,15 @@ training_default_rate = 0.04285
 # Check performance on test sample
 
 # load lr model
-with open('./Final_models/lm_model_short_obs.pickle', 'rb') as file:
+with open('./Final_models/lm_model_medium_obs.pickle', 'rb') as file:
     lm = pickle.load(file)
 
 # load WoE values
-with open('./Additional_data/WoE_binning_merged_short.pickle', 'rb') as file:
+with open('./Additional_data/WoE_binning_merged_medium.pickle', 'rb') as file:
     woe_dict = pickle.load(file)
 
 # load selected features
-with open('./Additional_data/selected_features_short.pickle', 'rb') as file:
+with open('./Additional_data/selected_features_medium.pickle', 'rb') as file:
     selected_features = pickle.load(file)
 
 # Inlcude observations with less than 13 snapshots?
@@ -182,3 +182,27 @@ else:
 
     print("AP: ", avg_precision)
     print("AUC: ", auc)
+
+coefs = pd.DataFrame(selected_features)
+coefs["coef"] = lm.coef_.reshape(-1, 1)
+print("LR coefficients: ", coefs.loc[(coefs.coef != 0) & (coefs.coef.abs() > 1e-5), :])
+
+
+# Make prediction on test sample
+y_predict = lm.predict(df_x_test.loc[:,selected_features])
+y_predict_prob = lm.predict_proba(df_x_test.loc[:,selected_features])
+y_test = df_x_test.target
+
+print("Test accuracy of LR + WoE: ", (y_predict==df_x_test.target).mean())
+
+fpr, tpr, thresholds = metrics.roc_curve(y_test, y_predict_prob[:,1])
+print("Test ROC AUC of LR + WoE: ",
+      metrics.roc_auc_score(y_test.to_numpy(), y_predict_prob[:,1]))
+
+# Precision-recall curve for LR
+display = metrics.PrecisionRecallDisplay.from_predictions(y_test, y_predict_prob[:,1], name="LR+WoE")
+_ = display.ax_.set_title("Test 2-class Precision-Recall curve")
+plt.show()
+coefs = pd.DataFrame(selected_features)
+coefs["coef"] = lm.coef_.reshape(-1, 1)
+print("LR coefficients: ", coefs.loc[(coefs.coef != 0) & (coefs.coef.abs() > 1e-5), :])
