@@ -5,6 +5,9 @@ import pandas as pd
 import torch
 import pickle
 import seaborn as sns
+import torch
+import scipy
+
 
 
 def calculate_integrated_gradient(ig, input, baseline, target, n_variables, n):
@@ -60,6 +63,7 @@ def calculate_feature_permutation(fp, input, target, n_variables, n):
 
     return attributions
 
+
 def calculate_feature_ablation(fa, input, target, n_variables, n):
     attributions = fa.attribute(input, target=target, show_progress=True)
     attributions = attributions.numpy().reshape(n, 13, 237)
@@ -85,3 +89,30 @@ def calculate_feature_ablation(fa, input, target, n_variables, n):
     plt.show()
 
     return attributions
+
+
+def run_lstm_for_lime(input, network=torch.load("../LSTM/Final_models/lstm.pickle"), batch_n=12800, device="cpu"):
+    """
+    Function to evaluate performance of the model
+    :param batch_n: size of learning/validating batch
+    :param network: lstm network to
+    :param input: dataset on which we should calculate accuracy
+    :param device: gpu or cpu
+    :return: list of outputs
+    """
+    outputs_list = []
+    loader = torch.utils.data.DataLoader(input, batch_size=batch_n,
+                                         shuffle=False, num_workers=0)
+
+    # since we're not training, we don't need to calculate the gradients for our outputs
+    with torch.no_grad():
+        for i, data in enumerate(loader):
+            inputs = data.float()
+            inputs = inputs.to(device)
+
+            # calculate outputs by running images through the network
+            outputs = network(inputs)
+
+            # outputs_list.append(list(outputs.data[:, 1].cpu().detach().numpy().reshape(-1, )))
+
+        return scipy.special.softmax(outputs.numpy(), axis=1)

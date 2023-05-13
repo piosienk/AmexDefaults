@@ -18,8 +18,8 @@ if __name__ == "__main__":
     logistic = False
     lstm = False
     ews = False
-    logistic_ews = True
-    explain = False
+    logistic_ews = False
+    explain = True
 
     if data_processing:
         print("Executing data processing steps")
@@ -205,8 +205,13 @@ if __name__ == "__main__":
         #     exec(code)
 
         # Execute Explainability step 3 - Feature Ablation
-        with open("./feature_ablation.py", "r") as file:
-            code = compile(file.read(), "./feature_ablation.py", "exec")
+        # with open("./feature_ablation.py", "r") as file:
+        #     code = compile(file.read(), "./feature_ablation.py", "exec")
+        #     exec(code)
+
+        # Execute Explainability step 4 - Lime explanations
+        with open("./lime_explainer.py", "r") as file:
+            code = compile(file.read(), "./lime_explainer.py", "exec")
             exec(code)
 
         os.chdir(default_path)
