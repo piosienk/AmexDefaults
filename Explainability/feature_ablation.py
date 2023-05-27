@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 import pickle
+import seaborn as sns
 import torch.nn as nn
 
 # Load model
@@ -14,7 +15,7 @@ fa = captum.attr.FeatureAblation(network_trained)
 
 # Settings
 # downsampling defaults to 5%?
-down_defaults = True
+down_defaults = False
 batch_n = 128
 element = 0
 n_variables = 15
@@ -44,23 +45,34 @@ if down_defaults:
 bad_index = np.where(data_test["y"].reshape(-1) == 1)
 good_index = np.where(data_test["y"].reshape(-1) == 0)
 
-input_bad = torch.from_numpy(data_test["x"][bad_index[0][1500:3000], :, :]).reshape(-1, 13, 237)
-input_good = torch.from_numpy(data_test["x"][good_index[0][1500:3000], :, :]).reshape(-1, 13, 237)
-input_test = torch.from_numpy(data_test["x"][1500:3000, :, :]).reshape(-1, 13, 237)
+baseline = torch.from_numpy(data_test["x"][:, :, :]).reshape(-1, 13, 237).mean(axis=0).reshape(-1, 13, 237)
 
-baseline_bad = torch.zeros(input_bad.shape)
-baseline_good = torch.zeros(input_good.shape)
-baseline = torch.zeros(input_test.shape)
+attribution_list = []
+for i in range(10):
+    print("run {}".format(i))
+    input_test = torch.from_numpy(data_test["x"][i*1500:(i+1)*1500, :, :]).reshape(-1, 13, 237)
 
-y_bad = np.repeat(1, 1500).tolist()
-y_good = np.repeat(0, 1500).tolist()
-y_test = data_test["y"][1500:3000].reshape(-1).tolist()
 
-del data_test
+    # baseline_bad = input_bad.mean(axis=0).reshape(-1, 13, 237)
+    # baseline_good = torch.zeros(input_good.shape)
 
-attributions = calculate_feature_ablation(fa, input_test, y_test, n_variables, 1500)
-attributions_bad = calculate_feature_ablation(fa, input_bad, y_bad, n_variables, 1500)
-attributions_good = calculate_feature_ablation(fa, input_good, y_good, n_variables, 1500)
+    # y_bad = np.repeat(1, 1500).tolist()
+    # y_good = np.repeat(0, 1500).tolist()
+    y_test = data_test["y"][i*1500:(i+1)*1500].reshape(-1).tolist()
 
-print('FP Attributions:', attributions_bad)
+    attributions = calculate_feature_ablation(fa, input_test, y_test, n_variables, 1500)
+    attribution_list.append(attributions.mean(axis=0))
+
+# attributions_bad, delta_bad = calculate_integrated_gradient(ig, input_bad, baseline_bad, y_bad, n_variables, 1500)
+# attributions_good, delta_good = calculate_integrated_gradient(ig, input_good, baseline_good, y_good, n_variables, 1500)
+mean_attribution = np.array(attribution_list).mean(axis=0)
+
+variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
+variable_names.columns = ["var_num", "var_name"]
+df_attributions = pd.DataFrame(mean_attribution, columns=variable_names.var_name)
+features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
+
+plt.subplots(figsize=(15, 8))
+ax = sns.heatmap(df_attributions.loc[:, features_max_attribution.index], linewidth=0.5)
+plt.show()
 

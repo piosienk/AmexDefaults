@@ -15,7 +15,7 @@ training_default_rate = 0.04285
 # Check performance on test sample
 
 # load lr model
-with open('./Final_models/lm_model_13_obs.pickle', 'rb') as file:
+with open('./Final_models/lm_model_13_obs_20_vars.pickle', 'rb') as file:
     lm = pickle.load(file)
 
 # load WoE values

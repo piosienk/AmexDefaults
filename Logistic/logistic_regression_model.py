@@ -39,7 +39,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     df.drop(columns="target"), df.target, test_size=0.1, random_state=123)
 
 # random forest model to select variables
-rf = RandomForestClassifier(n_estimators=100, min_samples_split=25, n_jobs=-1, random_state=123).fit(X_train,y_train)
+rf = RandomForestClassifier(n_estimators=1000, min_samples_split=25, n_jobs=-1, random_state=123).fit(X_train,y_train)
 
 # Extract top 20 variables and plot their importance
 f_i = list(zip(variables[1:],rf.feature_importances_))
@@ -73,5 +73,5 @@ _ = display.ax_.set_title("Validation 2-class Precision-Recall curve")
 plt.show()
 
 # Save model
-with open('./Final_models/lm_model_13_obs.pickle', 'wb') as file:
+with open('./Final_models/lm_model_13_obs_20_vars.pickle', 'wb') as file:
     pickle.dump(lm, file)

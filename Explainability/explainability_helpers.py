@@ -16,7 +16,7 @@ def calculate_integrated_gradient(ig, input, baseline, target, n_variables, n):
     variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
     variable_names.columns = ["var_num", "var_name"]
     df_attributions = pd.DataFrame(attributions.mean(axis=0), columns=variable_names.var_name)
-    features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
+    features_max_attribution = df_attributions.abs().max().sort_values(ascending=False).iloc[:n_variables]
 
     # plot max attribution
     plt.subplots(figsize=(15, 6))

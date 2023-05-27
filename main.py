@@ -15,11 +15,11 @@ if __name__ == "__main__":
     default_path = os.getcwd()
 
     data_processing = False
-    logistic = False
+    logistic = True
     lstm = False
     ews = False
     logistic_ews = False
-    explain = True
+    explain = False
 
     if data_processing:
         print("Executing data processing steps")
@@ -127,9 +127,9 @@ if __name__ == "__main__":
         os.chdir("./LSTM")
 
         # Execute LSTM model step 1 - Fit and test LSTM Model
-        # with open("./LSTM_run.py", "r") as file:
-        #     code = compile(file.read(), "./LSTM_run.py", "exec")
-        #     exec(code)
+        with open("./LSTM_run.py", "r") as file:
+            code = compile(file.read(), "./LSTM_run.py", "exec")
+            exec(code)
 
         # Execute LSTM model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./LSTM_test.py", "r") as file:
@@ -179,9 +179,9 @@ if __name__ == "__main__":
         #     exec(code)
 
         # Execute EWS medium model step 1 - Fit and test EWS medium Model
-        with open("./logistic_regression_model_EWS_medium.py", "r") as file:
-            code = compile(file.read(), "./logistic_regression_model_EWS_medium.py", "exec")
-            exec(code)
+        # with open("./logistic_regression_model_EWS_medium.py", "r") as file:
+        #     code = compile(file.read(), "./logistic_regression_model_EWS_medium.py", "exec")
+        #     exec(code)
 
         # Execute EWS medium model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./logistic_regression_test_EWS_medium.py", "r") as file:
@@ -199,20 +199,20 @@ if __name__ == "__main__":
         #     code = compile(file.read(), "./integrated_gradient.py", "exec")
         #     exec(code)
 
-        # Execute Explainability step 2 - Feature Importance
+        # Execute Explainability step 2 - Feature Permutation
         # with open("./feature_permutations.py", "r") as file:
         #     code = compile(file.read(), "./feature_permutations.py", "exec")
         #     exec(code)
 
         # Execute Explainability step 3 - Feature Ablation
-        # with open("./feature_ablation.py", "r") as file:
-        #     code = compile(file.read(), "./feature_ablation.py", "exec")
-        #     exec(code)
+        with open("./feature_ablation.py", "r") as file:
+            code = compile(file.read(), "./feature_ablation.py", "exec")
+            exec(code)
 
         # Execute Explainability step 4 - Lime explanations
-        with open("./lime_explainer.py", "r") as file:
-            code = compile(file.read(), "./lime_explainer.py", "exec")
-            exec(code)
+        # with open("./lime_explainer.py", "r") as file:
+        #     code = compile(file.read(), "./lime_explainer.py", "exec")
+        #     exec(code)
 
         os.chdir(default_path)
 

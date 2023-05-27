@@ -1,9 +1,10 @@
 import pickle
+
+import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, PrecisionRecallDisplay, roc_curve
-
 
 def prepare_lstm_data_3(input_path, output_path):
     """
@@ -39,6 +40,27 @@ def calculate_accuracy(network, loader, targets, device, data_type, batch_n=128)
     :param data_type: validation or training
     :return: list of outputs and accuracy values
     """
+
+    def amex_metric_mod(y_true, y_pred):
+        labels = np.transpose(np.array([y_true, y_pred]))
+        labels = labels[labels[:, 1].argsort()[::-1]]
+        weights = np.where(labels[:, 0] == 0, 20, 1)
+        cut_vals = labels[np.cumsum(weights) <= int(0.04 * np.sum(weights))]
+        top_four = np.sum(cut_vals[:, 0]) / np.sum(labels[:, 0])
+
+        gini = [0, 0]
+        for i in [1, 0]:
+            labels = np.transpose(np.array([y_true, y_pred]))
+            labels = labels[labels[:, i].argsort()[::-1]]
+            weight = np.where(labels[:, 0] == 0, 20, 1)
+            weight_random = np.cumsum(weight / np.sum(weight))
+            total_pos = np.sum(labels[:, 0] * weight)
+            cum_pos_found = np.cumsum(labels[:, 0] * weight)
+            lorentz = cum_pos_found / total_pos
+            gini[i] = np.sum((lorentz - weight_random) * weight)
+
+        return 0.5 * (gini[1] / gini[0] + top_four)
+
     correct = 0
     total = 0
     outputs_list = []
@@ -66,6 +88,8 @@ def calculate_accuracy(network, loader, targets, device, data_type, batch_n=128)
     outputs_list = [item for sublist in outputs_list for item in sublist]
     auc = roc_auc_score(targets, outputs_list)
 
+    print("Amex metric: ", amex_metric_mod(targets, outputs_list))
+
     if data_type == 'valid':
         print(f'Accuracy of the network on the validation: {100 * correct // total} %')
         print(f'AUC of the network on the validation: {100 * round(auc, 3)} %')
@@ -81,6 +105,9 @@ def calculate_accuracy(network, loader, targets, device, data_type, batch_n=128)
 
     accuracy = 100 * correct / total
 
-    return [accuracy, outputs_list, average_precision, auc]
+    if data_type == 'valid':
+        return [accuracy, outputs_list, average_precision, auc]
+    else:
+        return [accuracy, outputs_list, 0, auc]
 
 
