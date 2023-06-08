@@ -45,10 +45,10 @@ rf = RandomForestClassifier(n_estimators=1000, min_samples_split=25, n_jobs=-1, 
 f_i = list(zip(variables[1:],rf.feature_importances_))
 f_i.sort(key = lambda x : x[1])
 plt.subplots(figsize=(10,5))
-plt.barh([x[0] for x in f_i[-20:]],[x[1] for x in f_i[-20:]])
+plt.barh([x[0] for x in f_i[-200:]],[x[1] for x in f_i[-200:]])
 plt.show()
 
-selected_features = [x[0] for x in f_i[-20:]]
+selected_features = [x[0] for x in f_i[-200:]]
 
 # Save selected features
 with open('./Additional_data/selected_features.pickle', 'wb') as file:
@@ -73,5 +73,5 @@ _ = display.ax_.set_title("Validation 2-class Precision-Recall curve")
 plt.show()
 
 # Save model
-with open('./Final_models/lm_model_13_obs_20_vars.pickle', 'wb') as file:
+with open('./Final_models/lm_model_13_obs_200_vars.pickle', 'wb') as file:
     pickle.dump(lm, file)
