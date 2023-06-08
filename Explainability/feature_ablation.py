@@ -48,7 +48,7 @@ good_index = np.where(data_test["y"].reshape(-1) == 0)
 baseline = torch.from_numpy(data_test["x"][:, :, :]).reshape(-1, 13, 237).mean(axis=0).reshape(-1, 13, 237)
 
 attribution_list = []
-for i in range(10):
+for i in range(2):
     print("run {}".format(i))
     input_test = torch.from_numpy(data_test["x"][i*1500:(i+1)*1500, :, :]).reshape(-1, 13, 237)
 

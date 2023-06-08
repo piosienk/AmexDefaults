@@ -132,7 +132,9 @@ def partial_dependence(data, variable, n, approach="static"):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     device = "cpu"
 
-    col_index = np.where(data.columns == variable)[0][0]
+    col_index = np.where(data.columns[3:] == variable)[0][0]
+    variables_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
+    print("Variable index cross check:", variables_names.iloc[col_index, 1])
 
     if (data[variable].dtype == "float64") | (data[variable].dtype == "float32"):
 
@@ -140,10 +142,11 @@ def partial_dependence(data, variable, n, approach="static"):
         variable_max = data[variable].max()
         variable_min = data[variable].min()
 
+        xs_list = np.linspace(variable_min, variable_max, n)
+        average_f_result = []
+        average_f_predict = []
+
         if approach == "static":
-            xs_list = np.linspace(variable_min, variable_max, n)
-            average_f_result = []
-            average_f_predict = []
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
@@ -155,9 +158,10 @@ def partial_dependence(data, variable, n, approach="static"):
                 testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
                                                          num_workers=0)
 
-                acc, outputs_list, avg_precision, predicted_list = calculate_accuracy_PDP(network=network_trained, loader=testloader,
-                                                                           targets=test_y,
-                                                                           device=device)
+                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                          loader=testloader,
+                                                                                          targets=test_y,
+                                                                                          device=device)
 
                 avg_predicted = np.mean(predicted_list)
                 average_f_predict.append(avg_predicted)
@@ -168,17 +172,40 @@ def partial_dependence(data, variable, n, approach="static"):
             return xs_list, average_f_result, average_f_predict
 
         else:
-            # dorobić opcję z tworzeniem wartości od t=0 do ustalonego t=13
-            pass
+
+            with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
+                data = pickle.load(file)
+
+            for xs in xs_list:
+                first_obs = data["x"][:, 0, col_index]
+                data["x"][:, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
+                test_y = data["y"][:10000].reshape(-1).tolist()
+
+                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
+                                                         num_workers=0)
+
+                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                          loader=testloader,
+                                                                                          targets=test_y,
+                                                                                          device=device)
+
+                avg_predicted = np.mean(predicted_list)
+                average_f_predict.append(avg_predicted)
+
+                avg_response = np.mean(outputs_list)
+                average_f_result.append(avg_response)
+
+            return xs_list, average_f_result, average_f_predict
 
     else:
 
-        if approach == "static":
+        data = data.replace(to_replace=-9999, value=np.nan)
+        xs_list = data[variable].value_counts().head(n).index.tolist()
+        xs_list.sort()
+        average_f_result = []
+        average_f_predict = []
 
-            xs_list = data[variable].value_counts().head(100).index.tolist()
-            xs_list.sort()
-            average_f_result = []
-            average_f_predict = []
+        if approach == "static":
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
@@ -190,9 +217,10 @@ def partial_dependence(data, variable, n, approach="static"):
                 testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
                                                          num_workers=0)
 
-                acc, outputs_list, avg_precision, predicted_list = calculate_accuracy_PDP(network=network_trained, loader=testloader,
-                                                                           targets=test_y,
-                                                                           device=device)
+                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                          loader=testloader,
+                                                                                          targets=test_y,
+                                                                                          device=device)
 
                 avg_predicted = np.mean(predicted_list)
                 average_f_predict.append(avg_predicted)
@@ -201,9 +229,33 @@ def partial_dependence(data, variable, n, approach="static"):
                 average_f_result.append(avg_response)
 
             return xs_list, average_f_result, average_f_predict
+
         else:
-            # dorobić opcję z tworzeniem wartości od t=0 do ustalonego t=13
-            pass
+
+            with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
+                data = pickle.load(file)
+
+            for xs in xs_list:
+                first_obs = data["x"][:, 0, col_index]
+                data["x"][:, :, col_index] = np.transpose(np.round(np.linspace(first_obs, xs, 13)))
+                test_y = data["y"][:10000].reshape(-1).tolist()
+
+                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
+                                                         num_workers=0)
+
+                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                          loader=testloader,
+                                                                                          targets=test_y,
+                                                                                          device=device)
+
+                avg_predicted = np.mean(predicted_list)
+                average_f_predict.append(avg_predicted)
+
+                avg_response = np.mean(outputs_list)
+                average_f_result.append(avg_response)
+
+            return xs_list, average_f_result, average_f_predict
+
 
 def calculate_accuracy_PDP(network, loader, targets, device, batch_n=128):
     """
@@ -246,11 +298,7 @@ def calculate_accuracy_PDP(network, loader, targets, device, batch_n=128):
     # Calculate AUC
     outputs_list = [item for sublist in outputs_list for item in sublist]
     predicted_list = [item for sublist in predicted_list for item in sublist]
-
-    display = PrecisionRecallDisplay.from_predictions(targets, outputs_list, name="LSTM")
-    plt.show()
-    average_precision = display.average_precision
-    print("AP: ", average_precision)
     accuracy = 100 * correct / total
+    print("Accuracy: ", accuracy)
 
-    return [accuracy, outputs_list, average_precision, predicted_list]
+    return [accuracy, outputs_list, predicted_list]
