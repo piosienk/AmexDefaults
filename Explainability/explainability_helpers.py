@@ -122,9 +122,10 @@ def run_lstm_for_lime(input, network=torch.load("../LSTM/Final_models/lstm.pickl
         return scipy.special.softmax(outputs.numpy(), axis=1)
 
 
-def partial_dependence(data, variable, n, approach="static"):
+def partial_dependence(data, variable, n, approach="static", ceteris_paribus=False, client=None):
     # Network preps
     batch_n = 128
+    training_default_rate = 0.04285
 
     # Load model
     network_trained = torch.load("../LSTM/Final_models/lstm.pickle")
@@ -143,119 +144,223 @@ def partial_dependence(data, variable, n, approach="static"):
         variable_min = data[variable].min()
 
         xs_list = np.linspace(variable_min, variable_max, n)
-        average_f_result = []
-        average_f_predict = []
+
+        average_f_predict_bootstrap = []
+        average_f_result_bootstrap = []
 
         if approach == "static":
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
 
-            for xs in xs_list:
-                data["x"][:, :, col_index] = xs
-                test_y = data["y"][:10000].reshape(-1).tolist()
+            for i in range(2):
 
-                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
-                                                         num_workers=0)
+                average_f_result = []
+                average_f_predict = []
 
-                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
-                                                                                          loader=testloader,
-                                                                                          targets=test_y,
-                                                                                          device=device)
+                data_x_down, data_y_down = downsample_explainability_sample(data, i=i, training_default_rate= training_default_rate)
 
-                avg_predicted = np.mean(predicted_list)
-                average_f_predict.append(avg_predicted)
+                for xs in xs_list:
+                    data_x, data_y = data_x_down.copy(), data_y_down.copy()
 
-                avg_response = np.mean(outputs_list)
-                average_f_result.append(avg_response)
+                    if ceteris_paribus:
+                        x_orig = data_x[client, 12, col_index]
+                        if xs == xs_list[0]:
+                            print("Oiriginal X value ", x_orig)
+                        data_x[client, :, col_index] = xs
+                        data_y = data_y[client].reshape(-1).tolist()
+                        if xs == xs_list[0]:
+                            print("Target value: ", data_y[0])
 
-            return xs_list, average_f_result, average_f_predict
+                        testloader = torch.utils.data.DataLoader(data_x[client], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+                    else:
+                        data_x[:, :, col_index] = xs
+                        # test_y = data["y"][:10000].reshape(-1).tolist()
+                        data_y = data_y.reshape(-1).tolist()[:]
+                        testloader = torch.utils.data.DataLoader(data_x[:], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+
+
+                    acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                              loader=testloader,
+                                                                                              targets=data_y,
+                                                                                              device=device)
+
+                    avg_predicted = np.mean(predicted_list)
+                    average_f_predict.append(avg_predicted)
+
+                    avg_response = np.mean(outputs_list)
+                    average_f_result.append(avg_response)
+
+                average_f_predict_bootstrap.append(average_f_predict)
+                average_f_result_bootstrap.append(average_f_result)
+
+            return xs_list, average_f_predict_bootstrap, average_f_result_bootstrap
 
         else:
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
 
-            for xs in xs_list:
-                first_obs = data["x"][:, 0, col_index]
-                data["x"][:, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
-                test_y = data["y"][:10000].reshape(-1).tolist()
+            for i in range(2):
 
-                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
-                                                         num_workers=0)
+                average_f_result = []
+                average_f_predict = []
 
-                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
-                                                                                          loader=testloader,
-                                                                                          targets=test_y,
-                                                                                          device=device)
+                data_x_down, data_y_down = downsample_explainability_sample(data, i=i, training_default_rate= training_default_rate)
 
-                avg_predicted = np.mean(predicted_list)
-                average_f_predict.append(avg_predicted)
+                for xs in xs_list:
 
-                avg_response = np.mean(outputs_list)
-                average_f_result.append(avg_response)
+                    data_x, data_y = data_x_down.copy(), data_y_down.copy()
 
-            return xs_list, average_f_result, average_f_predict
+                    if ceteris_paribus:
+                        x_orig = data_x[client, 12, col_index]
+                        if xs == xs_list[0]:
+                            print("Oiriginal X value ", x_orig)
+                        first_obs = data_x[client, 0, col_index]
+                        data_x[client, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
+                        data_y = data_y[client].reshape(-1).tolist()
+                        if xs == xs_list[0]:
+                            print("Target value: ", data_y[0])
+
+                        testloader = torch.utils.data.DataLoader(data_x[client], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+
+                    else:
+                        first_obs = data_x[:, 0, col_index]
+                        data_x[:, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
+                        # test_y = data["y"][:10000].reshape(-1).tolist()
+                        data_y = data_y.reshape(-1).tolist()[:]
+                        testloader = torch.utils.data.DataLoader(data_x[:], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+
+                    acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                              loader=testloader,
+                                                                                              targets=data_y,
+                                                                                              device=device)
+
+                    avg_predicted = np.mean(predicted_list)
+                    average_f_predict.append(avg_predicted)
+
+                    avg_response = np.mean(outputs_list)
+                    average_f_result.append(avg_response)
+
+                average_f_predict_bootstrap.append(average_f_predict)
+                average_f_result_bootstrap.append(average_f_result)
+
+            return xs_list, average_f_predict_bootstrap, average_f_result_bootstrap
 
     else:
 
         data = data.replace(to_replace=-9999, value=np.nan)
         xs_list = data[variable].value_counts().head(n).index.tolist()
         xs_list.sort()
-        average_f_result = []
-        average_f_predict = []
+
+        average_f_predict_bootstrap = []
+        average_f_result_bootstrap = []
+
 
         if approach == "static":
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
 
-            for xs in xs_list:
-                data["x"][:, :, col_index] = xs
-                test_y = data["y"][:10000].reshape(-1).tolist()
+            for i in range(2):
 
-                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
-                                                         num_workers=0)
+                average_f_result = []
+                average_f_predict = []
 
-                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
-                                                                                          loader=testloader,
-                                                                                          targets=test_y,
-                                                                                          device=device)
+                data_x_down, data_y_down = downsample_explainability_sample(data, i=i, training_default_rate= training_default_rate)
 
-                avg_predicted = np.mean(predicted_list)
-                average_f_predict.append(avg_predicted)
+                for xs in xs_list:
+                    data_x, data_y = data_x_down.copy(), data_y_down.copy()
 
-                avg_response = np.mean(outputs_list)
-                average_f_result.append(avg_response)
+                    if ceteris_paribus:
+                        x_orig = data_x[client, 12, col_index]
+                        if xs == xs_list[0]:
+                            print("Oiriginal X value ", x_orig)
+                        data_x[client, :, col_index] = xs
+                        data_y = data_y[client].reshape(-1).tolist()
+                        if xs == xs_list[0]:
+                            print("Target value: ", data_y[0])
 
-            return xs_list, average_f_result, average_f_predict
+                        testloader = torch.utils.data.DataLoader(data_x[client], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+                    else:
+                        data_x[:, :, col_index] = xs
+                        # test_y = data["y"][:10000].reshape(-1).tolist()
+                        data_y = data_y.reshape(-1).tolist()[:]
+                        testloader = torch.utils.data.DataLoader(data_x[:], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+
+
+                    acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                              loader=testloader,
+                                                                                              targets=data_y,
+                                                                                              device=device)
+
+                    avg_predicted = np.mean(predicted_list)
+                    average_f_predict.append(avg_predicted)
+                    avg_response = np.mean(outputs_list)
+                    average_f_result.append(avg_response)
+
+                average_f_predict_bootstrap.append(average_f_predict)
+                average_f_result_bootstrap.append(average_f_result)
+
+            return xs_list, average_f_predict_bootstrap, average_f_result_bootstrap
 
         else:
 
             with open('../LSTM/Additional_data/data_test_LSTM.pickle', 'rb') as file:
                 data = pickle.load(file)
 
-            for xs in xs_list:
-                first_obs = data["x"][:, 0, col_index]
-                data["x"][:, :, col_index] = np.transpose(np.round(np.linspace(first_obs, xs, 13)))
-                test_y = data["y"][:10000].reshape(-1).tolist()
+            for i in range(2):
+                average_f_result = []
+                average_f_predict = []
 
-                testloader = torch.utils.data.DataLoader(data["x"][:10000], batch_size=batch_n, shuffle=False,
-                                                         num_workers=0)
+                data_x_down, data_y_down = downsample_explainability_sample(data, i=i, training_default_rate= training_default_rate)
 
-                acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
-                                                                                          loader=testloader,
-                                                                                          targets=test_y,
-                                                                                          device=device)
+                for xs in xs_list:
+                    data_x, data_y = data_x_down.copy(), data_y_down.copy()
 
-                avg_predicted = np.mean(predicted_list)
-                average_f_predict.append(avg_predicted)
+                    if ceteris_paribus:
+                        x_orig = data_x[client, 12, col_index]
+                        if xs == xs_list[0]:
+                            print("Oiriginal X value", x_orig)
+                        first_obs = data_x[client, 0, col_index]
+                        data_x[client, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
+                        data_y = data_y[client].reshape(-1).tolist()
+                        if xs == xs_list[0]:
+                            print("Target value: ", data_y[0])
 
-                avg_response = np.mean(outputs_list)
-                average_f_result.append(avg_response)
+                        testloader = torch.utils.data.DataLoader(data_x[client], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
 
-            return xs_list, average_f_result, average_f_predict
+                    else:
+                        first_obs = data_x[:, 0, col_index]
+                        data_x[:, :, col_index] = np.transpose(np.linspace(first_obs, xs, 13))
+                        data_y = data_y.reshape(-1).tolist()[:]
 
+
+                        testloader = torch.utils.data.DataLoader(data_x[:], batch_size=batch_n, shuffle=False,
+                                                                 num_workers=0)
+
+                    acc, outputs_list, predicted_list = calculate_accuracy_PDP(network=network_trained,
+                                                                                              loader=testloader,
+                                                                                              targets=data_y,
+                                                                                              device=device)
+
+                    avg_predicted = np.mean(predicted_list)
+                    average_f_predict.append(avg_predicted)
+
+                    avg_response = np.mean(outputs_list)
+                    average_f_result.append(avg_response)
+
+                average_f_predict_bootstrap.append(average_f_predict)
+                average_f_result_bootstrap.append(average_f_result)
+
+            return xs_list, average_f_predict_bootstrap, average_f_result_bootstrap
 
 def calculate_accuracy_PDP(network, loader, targets, device, batch_n=128):
     """
@@ -276,7 +381,7 @@ def calculate_accuracy_PDP(network, loader, targets, device, batch_n=128):
     # since we're not training, we don't need to calculate the gradients for our outputs
     with torch.no_grad():
         for i, data in enumerate(loader):
-            inputs = data.float()
+            inputs = data.float().reshape(-1,13,237)
             labels = targets[i * batch_n:(i + 1) * batch_n]
             labels = torch.IntTensor(labels)
             #             print(labels.shape)
@@ -302,3 +407,29 @@ def calculate_accuracy_PDP(network, loader, targets, device, batch_n=128):
     print("Accuracy: ", accuracy)
 
     return [accuracy, outputs_list, predicted_list]
+
+def downsample_explainability_sample(data, i, training_default_rate):
+
+    test_y = pd.DataFrame(data["y"], columns=["target"])
+    if i == 0:
+        print("Shape of the test data before adjustments: ", data["y"].shape)
+        print("Default rate before adjustment set: ", data["y"].mean())
+
+    # Calculate how many defaults we should keep to have the same DR as in the training set
+    target_bad_number = round(
+        training_default_rate * test_y.loc[test_y.target == 0, :].shape[0] / (
+                1 - training_default_rate))
+    to_remove_bad_number = test_y.loc[test_y.target == 1, :].shape[0] - target_bad_number
+
+    # to_remove_bad = test_y.loc[test_y.target == 1, :].sample(76283, random_state=123)
+    to_remove_bad = test_y.loc[test_y.target == 1, :].sample(to_remove_bad_number, random_state=i)
+
+    data_test_single_run_y = np.delete(data["y"], to_remove_bad.index, axis=0)
+    if i == 0:
+        print("Shape of the test data after adjustments: ", data_test_single_run_y.shape)
+        print("Default rate after adjustment set: ", data_test_single_run_y.mean())
+
+    # adjust X
+    data_test_single_run_x = np.delete(data["x"], to_remove_bad.index, axis=0)
+
+    return data_test_single_run_x, data_test_single_run_y

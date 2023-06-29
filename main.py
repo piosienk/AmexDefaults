@@ -142,10 +142,10 @@ if __name__ == "__main__":
         print("Executing EWS model steps")
         os.chdir("./EWS")
 
-        # # Execute EWS short model step 1 - Fit and test EWS short Model
-        with open("./EWS_short_run.py", "r") as file:
-            code = compile(file.read(), "./EWS_short_run.py", "exec")
-            exec(code)
+        # Execute EWS short model step 1 - Fit and test EWS short Model
+        # with open("./EWS_short_run.py", "r") as file:
+        #     code = compile(file.read(), "./EWS_short_run.py", "exec")
+        #     exec(code)
 
         # Execute EWS short model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./EWS_short_test.py", "r") as file:
@@ -153,9 +153,9 @@ if __name__ == "__main__":
             exec(code)
 
         # Execute EWS medium model step 1 - Fit and test EWS medium Model
-        with open("./EWS_medium_run.py", "r") as file:
-            code = compile(file.read(), "./EWS_medium_run.py", "exec")
-            exec(code)
+        # with open("./EWS_medium_run.py", "r") as file:
+        #     code = compile(file.read(), "./EWS_medium_run.py", "exec")
+        #     exec(code)
 
         # Execute EWS medium model step 2 - validate on the Test sample (the same as Logistic Regressor)
         with open("./EWS_medium_test.py", "r") as file:
@@ -218,6 +218,11 @@ if __name__ == "__main__":
         with open("./partial_dependence.py", "r") as file:
             code = compile(file.read(), "./partial_dependence.py", "exec")
             exec(code)
+
+        # Execute Explainability step 6- Ceteris Paribus
+        # with open("./ceteris_paribus.py", "r") as file:
+        #     code = compile(file.read(), "./partial_dependence.py", "exec")
+        #     exec(code)
 
         os.chdir(default_path)
 

@@ -3,6 +3,7 @@ import pickle
 import pandas as pd
 import torch
 from LSTM.LSTM_helpers import calculate_accuracy
+from sklearn.metrics import PrecisionRecallDisplay
 from LSTM.LSTM_model import LSTM
 
 # Settings
@@ -10,6 +11,7 @@ from LSTM.LSTM_model import LSTM
 down_defaults = True
 training_default_rate = 0.04285
 batch_n = 128
+m = 20
 
 # Load model
 network_trained = torch.load("./Final_models/ews_short.pickle")
@@ -19,10 +21,16 @@ device = "cpu"
 
 avg_precision_list = []
 auc_list = []
+main_lengths_list = []
+main_predictions_list = []
 
 if down_defaults:
+
+    # Prepare array for sequence length analysis
+    seq_length_stats = np.zeros(shape=[5, m])
+
     # Load data and downsample positive cases randomly
-    for i in range(20):
+    for i in range(m):
         print("test run {}:".format(i))
         with open('./Additional_data/data_test_EWS.pickle', 'rb') as file:
             data_test = pickle.load(file)
@@ -48,6 +56,10 @@ if down_defaults:
         # adjust X
         data_test_single_run_x= np.delete(data_test["x"], to_remove_bad.index, axis=0)
 
+        lengths_list = []
+        for j in range(data_test_single_run_x.shape[0]):
+            lengths_list.append(np.argmax(data_test_single_run_x[j].max(axis=1) == 0))
+
         testloader = torch.utils.data.DataLoader(data_test_single_run_x[:], batch_size=batch_n, shuffle=False,
                                                      num_workers=0)
 
@@ -57,6 +69,10 @@ if down_defaults:
                                                                   targets=targets_test,
                                                                   device=device, data_type="valid")
 
+        df_seq_analysis = pd.DataFrame([lengths_list, outputs_list, targets_test]).transpose()
+        df_seq_analysis.columns = ["length", "output", "target"]
+        seq_length_stats[:, i] = df_seq_analysis.groupby(by=["length"]).apply(
+            lambda x: PrecisionRecallDisplay.from_predictions(x["target"], x["output"], name="LSTM").average_precision)
         avg_precision_list.append(avg_precision)
         auc_list.append(auc)
 
@@ -66,6 +82,8 @@ if down_defaults:
     print("AP std: ", np.std(avg_precision_list))
     print("AUC mean: ", np.mean(auc_list))
     print("AUC std: ", np.std(auc_list))
+    print("####################")
+    print(seq_length_stats.mean(axis=1))
 
 
 else:
