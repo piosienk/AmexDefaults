@@ -8,7 +8,7 @@ import seaborn as sns
 import torch.nn as nn
 
 # Load model
-from Explainability.explainability_helpers import calculate_feature_ablation
+from Explainability.explainability_helpers_june import calculate_feature_ablation
 
 network_trained = torch.load("../LSTM/Final_models/lstm.pickle")
 fa = captum.attr.FeatureAblation(network_trained)
@@ -38,8 +38,8 @@ if down_defaults:
     print("Shape of the test data after adjustments: ", data_test["y"].shape)
     print("Default rate after adjustment set: ", data_test["y"].mean())
 
-    # adjust X
-    data_test["x"] = np.delete(data_test["x"], to_remove_bad.index, axis=0)
+# adjust X
+# data_test["x"] = np.delete(data_test["x"], to_remove_bad.index, axis=0)
 
 # Prepare input and baseline for integrated gradient
 bad_index = np.where(data_test["y"].reshape(-1) == 1)
@@ -48,36 +48,31 @@ good_index = np.where(data_test["y"].reshape(-1) == 0)
 baseline = torch.from_numpy(data_test["x"][:, :, :]).reshape(-1, 13, 237).mean(axis=0).reshape(-1, 13, 237)
 
 attribution_list = []
-# print("run {}".format(i))
-# input_test = torch.from_numpy(data_test["x"][i*1500:(i+1)*1500, :, :]).reshape(-1, 13, 237)
-input_test = torch.from_numpy(data_test["x"][:, :, :]).reshape(-1, 13, 237)
+for i in range(2):
+    print("run {}".format(i))
+    input_test = torch.from_numpy(data_test["x"][i*1500:(i+1)*1500, :, :]).reshape(-1, 13, 237)
 
 
-# baseline_bad = input_bad.mean(axis=0).reshape(-1, 13, 237)
-# baseline_good = torch.zeros(input_good.shape)
+    # baseline_bad = input_bad.mean(axis=0).reshape(-1, 13, 237)
+    # baseline_good = torch.zeros(input_good.shape)
 
-# y_bad = np.repeat(1, 1500).tolist()
-# y_good = np.repeat(0, 1500).tolist()
-# y_test = data_test["y"][i*1500:(i+1)*1500].reshape(-1).tolist()
-y_test = data_test["y"][:].reshape(-1).tolist()
+    # y_bad = np.repeat(1, 1500).tolist()
+    # y_good = np.repeat(0, 1500).tolist()
+    y_test = data_test["y"][i*1500:(i+1)*1500].reshape(-1).tolist()
 
-agg_precision_list, agg_acc_list = calculate_feature_ablation(input_test, y_test, a=3, batch_n=batch_n,
-                                                              network_trained=network_trained)
-# attribution_list.append(attributions.mean(axis=0))
-
-pd.DataFrame(np.array(agg_precision_list)).to_csv("./Tests/fa_modified_results_precision_full_a3.csv")
-pd.DataFrame(np.array(agg_acc_list)).to_csv("./Tests/fa_modified_results_accuracy_full_a3.csv")
+    attributions = calculate_feature_ablation(input_test, y_test)
+    attribution_list.append(attributions.mean(axis=0))
 
 # attributions_bad, delta_bad = calculate_integrated_gradient(ig, input_bad, baseline_bad, y_bad, n_variables, 1500)
 # attributions_good, delta_good = calculate_integrated_gradient(ig, input_good, baseline_good, y_good, n_variables, 1500)
-# mean_attribution = np.array(attribution_list).mean(axis=0)
-#
-# variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
-# variable_names.columns = ["var_num", "var_name"]
-# df_attributions = pd.DataFrame(mean_attribution, columns=variable_names.var_name)
-# features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
-#
-# plt.subplots(figsize=(15, 8))
-# ax = sns.heatmap(df_attributions.loc[:, features_max_attribution.index], linewidth=0.5)
-# plt.show()
+mean_attribution = np.array(attribution_list).mean(axis=0)
+
+variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
+variable_names.columns = ["var_num", "var_name"]
+df_attributions = pd.DataFrame(mean_attribution, columns=variable_names.var_name)
+features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
+
+plt.subplots(figsize=(15, 8))
+ax = sns.heatmap(df_attributions.loc[:, features_max_attribution.index], linewidth=0.5)
+plt.show()
 

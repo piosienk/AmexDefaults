@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 from Explainability.explainability_helpers import partial_dependence
 
 data = pd.read_parquet(data_path + "/test_data_for_LSTM.parquet")
-variable = "B_4"
+variable = "P_2"
 n = 50
-approach = "static"
-client = 50
+approach = "dynamic"
+client = 28
 
 
-xs_list, average_f_result_list, average_f_predict_list = partial_dependence(data, variable, n, approach=approach,
+xs_list,  average_f_predict_list, average_f_result_list = partial_dependence(data, variable, n, approach=approach,
                                                                   ceteris_paribus=True, client=client)
 
 average_f_result = np.array(average_f_result_list).mean(axis=0)

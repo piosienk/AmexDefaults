@@ -58,9 +58,9 @@ y_test = data_test["y"][1500:3000].reshape(-1).tolist()
 
 del data_test
 
-attributions = calculate_feature_ablation(fa, input_test, y_test, n_variables, 1500)
-attributions_bad = calculate_feature_ablation(fa, input_bad, y_bad, n_variables, 1500)
-attributions_good = calculate_feature_ablation(fa, input_good, y_good, n_variables, 1500)
+attributions = calculate_feature_ablation(input_test, y_test)
+attributions_bad = calculate_feature_ablation(input_bad, y_bad,)
+attributions_good = calculate_feature_ablation(input_good, y_good,)
 
 print('FP Attributions:', attributions_bad)
 

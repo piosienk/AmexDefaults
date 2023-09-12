@@ -67,63 +67,32 @@ def calculate_feature_permutation(fp, input, target, n_variables, n):
     return attributions
 
 
-def calculate_feature_ablation(input, target,  a, batch_n, network_trained):
+def calculate_feature_ablation(fa, input, target, n_variables, n):
+    attributions = fa.attribute(input, target=target, show_progress=True)
+    attributions = attributions.numpy().reshape(n, 13, 237)
+    variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
+    variable_names.columns = ["var_num", "var_name"]
+    df_attributions = pd.DataFrame(attributions.mean(axis=0), columns=variable_names.var_name)
+    features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
 
-    # for each variable we run ablation and compare results
-    agg_acc_list = []
-    agg_precision_list = []
-    for m in [0,1,3,10,11,30,200]:
-        # Iteratively, calculate baseline value as average of previous "a" points
-        k = 0
-        acc_list = []
-        precision_list = []
-        while k+a < input.shape[1]:
+    # plot max attribution
+    plt.subplots(figsize=(15, 6))
+    plt.bar(features_max_attribution.index, features_max_attribution.values)
+    plt.xticks(rotation=-45)
+    plt.show()
 
-            input_2 = input.detach().clone()
-            baseline = input[:,k:k+a,m].mean(axis=1)
-            input_2[:,k+a,m] = baseline
+    # plot attribution change over time
+    plt.subplots(figsize=(15, 8))
+    for column in features_max_attribution.index:
+        plt.plot(df_attributions[column], label=column)
+    plt.legend()
+    plt.show()
 
+    plt.subplots(figsize=(15, 8))
+    ax = sns.heatmap(df_attributions.loc[:, features_max_attribution.index], linewidth=0.5)
+    plt.show()
 
-            testloader = torch.utils.data.DataLoader(input_2[:], batch_size=batch_n, shuffle=False,
-                                                     num_workers=0)
-
-            acc, outputs_list, avg_precision, auc = calculate_accuracy(network=network_trained, loader=testloader,
-                                                                       targets=target,
-                                                                       device="cpu", data_type="valid")
-
-            precision_list.append(avg_precision)
-            acc_list.append(acc)
-            k += 1
-
-        agg_precision_list.append(precision_list)
-        agg_acc_list.append(acc_list)
-
-
-    # attributions = fa.attribute(input, target=target, show_progress=True)
-    # attributions = attributions.numpy().reshape(n, 13, 237)
-    # variable_names = pd.read_csv("../LSTM/Additional_data/variables_names.csv")
-    # variable_names.columns = ["var_num", "var_name"]
-    # df_attributions = pd.DataFrame(attributions.mean(axis=0), columns=variable_names.var_name)
-    # features_max_attribution = df_attributions.max().abs().sort_values(ascending=False).iloc[:n_variables]
-    #
-    # # plot max attribution
-    # plt.subplots(figsize=(15, 6))
-    # plt.bar(features_max_attribution.index, features_max_attribution.values)
-    # plt.xticks(rotation=-45)
-    # plt.show()
-    #
-    # # plot attribution change over time
-    # plt.subplots(figsize=(15, 8))
-    # for column in features_max_attribution.index:
-    #     plt.plot(df_attributions[column], label=column)
-    # plt.legend()
-    # plt.show()
-    #
-    # plt.subplots(figsize=(15, 8))
-    # ax = sns.heatmap(df_attributions.loc[:, features_max_attribution.index], linewidth=0.5)
-    # plt.show()
-
-    return agg_precision_list, agg_acc_list
+    return attributions
 
 
 def run_lstm_for_lime(input, network=torch.load("../LSTM/Final_models/lstm.pickle"), batch_n=12800, device="cpu"):

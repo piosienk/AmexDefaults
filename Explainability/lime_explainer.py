@@ -25,13 +25,13 @@ variable_names = pd.read_csv(lstm_data_path+"/variables_names.csv", sep=",").ilo
 # cat_variables_final_indexes = np.array([np.where(np.array(variable_names)==i) for i in cat_variables_final]).reshape(-1)
 y_train = data_train["y"].reshape(-1)
 
+kernel_width = np.sqrt(237*13)*0.75
+
 lime_explainer = lt.RecurrentTabularExplainer(training_data=data_train["x"][:100000], mode="classification",
                                               training_labels=y_train[:100000], feature_names=variable_names,
                                               # categorical_features=cat_variables_final_indexes,
                                          # categorical_names=cat_variables_final,
-                                         #      kernel_width=np.sqrt(237*13)*0.75,
-                                              kernel_width=100,
-
+                                              kernel_width=kernel_width,
                                          discretize_continuous=False, random_state=123)
 
 del data_train
@@ -41,10 +41,10 @@ with open(lstm_data_path+"/data_test_LSTM.pickle", 'rb') as file:
 
 y_test = data_test["y"].reshape(-1)
 
-for i in range(10):
+for i in range(1):
     example = i
 
     explanation = lime_explainer.explain_instance(data_test["x"][example].reshape(1,13,237), run_lstm_for_lime,
                                                   labels=[y_test[example]], num_samples=1000)
-    explanation.save_to_file("./Tests/lime_explanation_ex_{}_y={}.html".format(example, y_test[example]))
+    explanation.save_to_file("./Tests/lime_explanation_ex_{}_y={}_kern={}.html".format(example, y_test[example], kernel_width))
     print(y_test[example])

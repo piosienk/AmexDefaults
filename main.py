@@ -205,9 +205,9 @@ if __name__ == "__main__":
         #     exec(code)
 
         # Execute Explainability step 3 - Feature Ablation
-        # with open("./feature_ablation.py", "r") as file:
-        #     code = compile(file.read(), "./feature_ablation.py", "exec")
-        #     exec(code)
+        with open("./feature_ablation.py", "r") as file:
+            code = compile(file.read(), "./feature_ablation.py", "exec")
+            exec(code)
 
         # Execute Explainability step 4 - Lime explanations
         # with open("./lime_explainer.py", "r") as file:
@@ -215,13 +215,13 @@ if __name__ == "__main__":
         #     exec(code)
 
         # Execute Explainability step 5 - Partial Dependence
-        with open("./partial_dependence.py", "r") as file:
-            code = compile(file.read(), "./partial_dependence.py", "exec")
-            exec(code)
-
-        # Execute Explainability step 6- Ceteris Paribus
-        # with open("./ceteris_paribus.py", "r") as file:
+        # with open("./partial_dependence.py", "r") as file:
         #     code = compile(file.read(), "./partial_dependence.py", "exec")
+        #     exec(code)
+
+        # # Execute Explainability step 6- Ceteris Paribus
+        # with open("./ceteris_paribus.py", "r") as file:
+        #     code = compile(file.read(), "./ceteris_paribus.py", "exec")
         #     exec(code)
 
         os.chdir(default_path)
